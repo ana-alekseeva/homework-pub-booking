@@ -106,10 +106,12 @@ async def run_voice_mode(session: Session, persona: ManagerPersona, max_turns: i
             ServerMessageType,
             TranscriptionConfig,
         )
-    except ImportError as e:
+    except (ImportError, OSError) as e:
+        name = getattr(e, "name", None) or "PortAudio/sounddevice"
         print(
-            f"⚠  Missing voice dep: {e.name}. Run 'make setup' with voice extra:\n"
+            f"⚠  Missing voice dep: {name}. Run 'make setup' with voice extra:\n"
             "     uv sync --extra voice\n"
+            "   (WSL users: also run: sudo apt-get install -y libportaudio2)\n"
             "   Falling back to text mode.",
             file=sys.stderr,
         )
