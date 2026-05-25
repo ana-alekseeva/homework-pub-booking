@@ -195,29 +195,27 @@ async def run_scenario(real: bool) -> int:
     # populate _TOOL_CALL_LOG before the real scenario runs.
     clear_log()
 
-    _TASK = (
+    task = (
         "Research an Edinburgh pub and produce an HTML event flyer.\n\n"
-        "Use exactly two subgoals:\n"
-        "  Subgoal 1 — gather all data by calling these three tools (in any order):\n"
-        "    venue_search(near='Haymarket', party_size=6, budget_max_gbp=800)\n"
-        "    get_weather(city='edinburgh', date='2026-04-25')\n"
-        "    calculate_cost(venue_id=<id from venue_search>, party_size=6,\n"
-        "                   duration_hours=3, catering_tier='bar_snacks')\n"
-        "  Subgoal 2 — write the flyer and finish:\n"
-        "    generate_flyer(event_details={\n"
-        "      'venue_name': <name from venue_search>,\n"
-        "      'venue_address': <address from venue_search>,\n"
-        "      'date': '2026-04-25', 'time': '19:30', 'party_size': 6,\n"
-        "      'condition': <from get_weather>, 'temperature_c': <from get_weather>,\n"
-        "      'total_gbp': <from calculate_cost>, 'deposit_required_gbp': <from calculate_cost>\n"
-        "    })\n"
-        "    complete_task(result={'flyer': 'workspace/flyer.html', 'venue': <venue_id>})\n\n"
+        "Use exactly ONE subgoal that calls all tools in this order:\n"
+        "  1. venue_search(near='Haymarket', party_size=6, budget_max_gbp=800)\n"
+        "  2. get_weather(city='edinburgh', date='2026-04-25')\n"
+        "  3. calculate_cost(venue_id=<id from step 1>, party_size=6,\n"
+        "                    duration_hours=3, catering_tier='bar_snacks')\n"
+        "  4. generate_flyer(event_details={\n"
+        "       'venue_name': <name from step 1>,\n"
+        "       'venue_address': <address from step 1>,\n"
+        "       'date': '2026-04-25', 'time': '19:30', 'party_size': 6,\n"
+        "       'condition': <from step 2>, 'temperature_c': <from step 2>,\n"
+        "       'total_gbp': <from step 3>, 'deposit_required_gbp': <from step 3>\n"
+        "     })\n"
+        "  5. complete_task(result={'flyer': 'workspace/flyer.html', 'venue': <venue_id>})\n\n"
         "Do NOT call complete_task until generate_flyer has run and written workspace/flyer.html."
     )
     with example_sessions_dir("ex5-edinburgh-research", persist=True) as sessions_root:
         session = create_session(
             scenario="edinburgh-research",
-            task=_TASK,
+            task=task,
             sessions_dir=sessions_root,
         )
         print(f"Session {session.session_id}")
@@ -248,22 +246,25 @@ async def run_scenario(real: bool) -> int:
             tools.unregister("handoff_to_structured")
         except Exception:
             pass
-        _PLANNER_SYSTEM = (
-            "You are the PLANNER of an always-on agent. Break the task into 2 subgoals.\n\n"
+        planner_system = (
+            "You are the PLANNER of an always-on agent. Follow the task exactly — "
+            "use the number of subgoals the task specifies (usually one).\n\n"
             "Output ONLY a JSON array with this shape:\n"
             '[{"id":"sg_1","description":"...","success_criterion":"...",'
-            '"estimated_tool_calls":3,"depends_on":[],"assigned_half":"loop"},...]\n\n'
+            '"estimated_tool_calls":5,"depends_on":[],"assigned_half":"loop"}]\n\n'
             "CRITICAL: the executor never sees the original task — only the subgoal "
             "description. Copy every tool name and every argument value VERBATIM from "
             "the task into the subgoal description so the executor knows exactly what "
             "to call and with which arguments."
         )
         half = LoopHalf(
-            planner=DefaultPlanner(model=planner_model, client=client, system_prompt=_PLANNER_SYSTEM),
+            planner=DefaultPlanner(
+                model=planner_model, client=client, system_prompt=planner_system
+            ),
             executor=DefaultExecutor(model=executor_model, client=client, tools=tools),  # type: ignore[arg-type]
         )
 
-        result = await half.run(session, {"task": _TASK})
+        result = await half.run(session, {"task": task})
         print(f"\nLoop half outcome: {result.next_action}")
         print(f"  summary: {result.summary}")
 

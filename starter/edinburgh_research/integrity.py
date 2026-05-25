@@ -126,11 +126,11 @@ def verify_dataflow(flyer_content: str) -> IntegrityResult:
 
     # Also check named fields from data-testid attributes (venue name, etc.)
     # Skip placeholder defaults like "TBD" that no tool ever produces.
-    _PLACEHOLDERS = {"tbd", "n/a", "unknown", ""}
+    placeholders = {"tbd", "n/a", "unknown", ""}
     testid = extract_testid_facts(flyer_content)
     for key in ("venue_name",):
         val = testid.get(key, "")
-        if val and val.strip().lower() not in _PLACEHOLDERS:
+        if val and val.strip().lower() not in placeholders:
             facts_to_check.append(val)
 
     # De-dupe while preserving order

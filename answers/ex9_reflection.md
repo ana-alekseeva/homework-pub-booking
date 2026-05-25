@@ -46,22 +46,23 @@ planner heuristic, but the bridge feeding the rejection back as the next task.
 
 ### Your answer
 
-In session `sess_44b11c4e303e` (Ex5, 2026-05-24), `calculate_cost(royal_oak,
-6, 3, bar_snacks)` logged `total_gbp: 841` and `deposit_required_gbp: 168`
-in `_TOOL_CALL_LOG` (trace event at `2026-05-24T21:09:41.665684Z`:
-`"summary": "calculate_cost(royal_oak, 6): total £841, deposit £168"`).
-`generate_flyer` was then called at `21:09:48.177666Z` with
-`event_details: {total_gbp: 841, deposit_required_gbp: 168}` and wrote
-`workspace/flyer.html` containing `<dd data-testid="total_gbp">£841</dd>`
-and `<dd data-testid="deposit_required_gbp">£168</dd>`.
+In session `sess_b72d93bd82ea` (Ex5, 2026-05-25), `calculate_cost(haymarket_tap,
+6, 3, bar_snacks)` logged `total_gbp: 556` and `deposit_required_gbp: 111`
+in `_TOOL_CALL_LOG` (trace event at `2026-05-25T10:17:43.831959Z`:
+`"summary": "calculate_cost(haymarket_tap, 6): total £556, deposit £111"`).
+`generate_flyer` was then called at `10:17:58.323107Z` with
+`event_details: {total_gbp: 556, deposit_required_gbp: 111}` and wrote
+`workspace/flyer.html` containing `<dd data-testid="total_gbp">£556</dd>`
+and `<dd data-testid="deposit_required_gbp">£111</dd>`.
 
 `verify_dataflow` extracts all `£<N>` values from the HTML (after stripping
-tags) and calls `fact_appears_in_log` for each. `£841` matches `841` in
-`calculate_cost`'s output dict; `£168` matches `168` in the same record;
+tags) and calls `fact_appears_in_log` for each. `£556` matches `556` in
+`calculate_cost`'s output dict; `£111` matches `111` in the same record;
 `12` (temperature) matches `get_weather`'s output; `cloudy` matches the
-`condition` field. The function returned `ok=True` with 5 verified facts.
+`condition` field; `Haymarket Tap` matches `venue_search`'s output. The
+function returned `ok=True` with 5 verified facts.
 
-If the LLM had instead written `£9999` — a value absent from every tool
+If we had instead written `£9999` — a value absent from every tool
 output and every tool argument in `_TOOL_CALL_LOG` — `fact_appears_in_log`
 would recursively scan all `.output` and `.arguments` dicts across every
 `ToolCallRecord`, find no match, and `verify_dataflow` would return
